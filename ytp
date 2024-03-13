@@ -1,0 +1,73 @@
+#!/bin/bash
+# AUTHOR: Hurkus (2024)
+
+
+p=''
+o=''
+url=''
+
+
+function help(){
+	echo "Usage: $0 -p <360/720/1080/...> <url> -o <out.%>"
+}
+
+
+while (( $# > 0 )); do
+	# -p <360/720/1080/...>
+	if [[ "$1" = '-p' ]]; then
+		if [[ $# < 2 ]]; then
+			echo "Missing download video resolution: '-p <360/720/1080/...>'"
+			help
+			exit 1
+		else
+			p="$2"
+			shift 2
+		fi
+	# <360p/720p/1080p/...>
+	elif [[ "$1" =~ ^([0-9]+)p?$ ]]; then
+		p="${BASH_REMATCH[1]}"
+		shift
+	# -o <out.%> where % is the generated file extension
+	elif [[ "$1" = '-o' ]]; then
+		if [[ $# < 2 ]]; then
+			echo "Missing output file name argument: '-o <name.%>'"
+			help
+			exit 1
+		else
+			o="$2"
+			shift 2
+		fi
+	# Url
+	elif [[ ! "$1" =~ ^- ]]; then
+		url="$1"
+		shift
+	# error
+	else
+		echo "Unknown option: '$1'"
+		exit 1
+	fi
+done
+
+
+if [[ -z "$url" ]]; then
+	echo "Missing url."
+	help
+	exit 1
+fi
+
+
+if [[ -n "$p" && -n "$o" ]]; then
+	out="${o//%/%(ext)s}"
+	echo "Downloading ${p}p to '$o'"
+	yt-dlp "$url" -f "bestvideo[height<=$p]+bestaudio" -o "$out"
+elif [[ -n "$p" ]]; then
+	echo "Downloading ${p}p"
+	yt-dlp "$url" -f "bestvideo[height<=$p]+bestaudio"
+elif [[ -n "$o" ]]; then
+	out="${o//%/%(ext)s}"
+	echo "Downloading best video to '$o'"
+	yt-dlp "$url" -f "bestvideo+bestaudio" -o "$out"
+else
+	echo "Downloading best video"
+	yt-dlp "$url" -f "bestvideo+bestaudio"
+fi
